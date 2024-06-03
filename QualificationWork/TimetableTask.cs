@@ -11,24 +11,26 @@ namespace QualificationWork {
 
         private TimetableTask() {}
 
-        //public Item[] ProfessorToItems()
+        public List<Item> ItemizeByProfessor(Matrix<float> weights, int j) {
+            List<Item> list = new List<Item>((int)Matrix.RowSums().Sum());
+            foreach (var (prof, hourCountRaw) in Matrix.EnumerateColumnsIndexed()) {
+                foreach (var (group,hours) in hourCountRaw.EnumerateIndexed()) {
+                    list.Add(new Item { Value = (int)weights[group, j], Weight = 1, Prof = j, Group = group });
+                }
+            }
+            return list;
+        }
+        public List<Item> Itemize(Matrix<float> weights) {
+            List<Item> list = new List<Item> ((int)Matrix.RowSums().Sum());
+            foreach (var (group,prof,hourCountRaw) in Matrix.EnumerateIndexed()) {
+                int hourCount = (int)hourCountRaw;
+                for (int i = 0; i < hourCount; i++) {
+                    list.Add(new Item { Value = (int)weights[group, prof], Weight=1, Prof = prof, Group = group });
+                }
+            }
+            return list;
+        }
 
-        //private void Verify() {
-        //     Create sets for quick lookup
-        //    var professorSet = new HashSet<Professor>(Professors);
-        //    var groupSet = new HashSet<Group>(Groups);
-
-        //     Verify each ProfGroup
-        //    foreach (var profGroup in PlannedHours) {
-        //        if (!professorSet.Contains(profGroup.Professor)) {
-        //            throw new ArgumentException($"Professor {profGroup.Professor.Name} is not in the list of Professors.");
-        //        }
-
-        //        if (!groupSet.Contains(profGroup.Group)) {
-        //            throw new ArgumentException($"Group {profGroup.Group.Name} is not in the list of Groups.");
-        //        }
-        //    }
-        //}
     }
 
     public partial class TimetableTask {

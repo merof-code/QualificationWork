@@ -1,5 +1,6 @@
 ﻿using MathNet.Numerics.LinearAlgebra;
 using System;
+using System.Text.RegularExpressions;
 using static QualificationWork.Program;
 
 namespace QualificationWork {
@@ -7,6 +8,8 @@ namespace QualificationWork {
         public int Weight { get; set; }
         public int Value { get; set; } = -1;
         public string Name { get; set; } = "unset";
+        public int Group { get; internal set; }
+        public int Prof { get; internal set; }
 
         public override string ToString() {
             return $"({Weight}|{Value})";
@@ -85,14 +88,15 @@ namespace QualificationWork {
         }
 
         private static void Example1p4() {
+            int hours = 3, days = 2;
             var groups = new List<Group> {
                 new Group("m1"),
                 new Group("m2")
             };
 
             var professors = new List<Professor> {
-                new Professor("p1"),
-                new Professor("p2"),
+                new Professor("p1") { Availability = Vector<float>.Build.Dense(hours * days, 1)},
+                new Professor("p2") { Availability = Vector<float>.Build.Dense(hours * days, 1)},
             };
 
             float[,] array = new float[,] {
@@ -105,13 +109,50 @@ namespace QualificationWork {
 
             var task = new TimetableTask.Builder()
                 .Groups(groups).Professors(professors)
-                .HoursPerDay(6).Days(2)
+                .HoursPerDay(hours).Days(days)
                 .PlannedHours(matrix)
                 .Build();
 
             Console.WriteLine("Timetable limitations created successfully.");
+            Console.WriteLine(task.Matrix);
+            
             // Create the weights.
-            //KnapSackProblem knapSackProblem = new(items, volume)
+            var prioraty = Matrix<float>.Build.DenseOfArray(new float[,] {
+                { 2, 4 },  // Professor A's hours for Group 1 and Group 2
+                { 1, 3 }   // Professor B's hours for Group 1 and Group 2
+            });
+
+            Matrix<float> result = prioraty.Clone();
+            prioraty.Map(x => 1 / x, result);
+            Console.WriteLine("Wights:");
+            Console.WriteLine(result);
+
+
+            //this will solve one prof by one
+            for (int i = 0; i < professors.Count; i++) {
+                var items = task.ItemizeByProfessor(prioraty,i);
+                var solution = KnapSackProblem.Solve(items.ToArray(), hours * days);
+
+                int groupC = task.Groups.Count;
+                var res = Matrix<float>.Build.DenseOfIndexed(hours * days, groupC * task.Professors.Count,
+                    solution.Select((x, i) => Tuple.Create(i, groupC * x.Group + x.Prof, 1f)));
+                Console.WriteLine(res);
+                foreach (var item in solution) {
+                    Console.WriteLine($"m{item.Group + 1} p{item.Prof + 1}");
+                }
+            }
+
+
+            ////this solves it all in one go, but this is only as if it was only one prof
+            //KnapSackProblem knapSackProblem = new(items.ToArray(), hours * days);
+            //var solution = KnapSackProblem.Solve(items.ToArray(), hours * days);
+            //int groupC = task.Groups.Count;
+            //var res = Matrix<float>.Build.DenseOfIndexed(hours * days, groupC * task.Professors.Count,
+            //    solution.Select((x,i) => Tuple.Create(i, groupC * x.Group + x.Prof, 1f)));
+            //Console.WriteLine(res);
+            //foreach (var item in solution) {
+            //    Console.WriteLine($"m{item.Group + 1} p{item.Prof + 1}");
+            //}
         }
     }
 }

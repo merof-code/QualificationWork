@@ -1,44 +1,34 @@
 ﻿using static QualificationWork.Program;
 
 namespace QualificationWork {
-    public class KnapSackProblem {
-        public int Volume { get; set; }
-        public Item[] Items { get; set; }
-        public int MaxValue { get => _matrix == null ? 0 : _matrix[Items.Length, Volume]; }
-        private List<Item> _solution;
-        private int[,] _matrix;
-
-        public KnapSackProblem(Item[] items, int volume) {
-            Volume = volume;
-            Items = items;
+    public static class KnapSackProblem {
+        public static List<Item> Solve(Item[] items, int volume) {
+            int[,] _matrix = BuildTable(items, volume);
+            return FindItems(items.Length, volume, _matrix, items);
         }
 
-        public List<Item> Solve() {
-            _matrix = BuildTable();
-            _solution = new List<Item>();
-            FindItems2(Items.Length, Volume);
-            return _solution;
-        }
-        private void FindItems2(int k, int s) {
+        private static List<Item> FindItems(int k, int s, int[,] _matrix, Item[] items) {
+            var solution = new List<Item>();
             while (k > 0 && s > 0) {
                 var current = _matrix[k, s];
                 if (current != _matrix[k - 1, s]) {
-                    _solution.Add(Items[k - 1]);
-                    s -= Items[k - 1].Weight;
+                    solution.Add(items[k - 1]);
+                    s -= items[k - 1].Weight;
                 }
                 k--;
             }
+            return solution;
         }
 
         //https://stackoverflow.com/questions/50393489/knapsack-c-sharp-implementation-task
-        private int[,] BuildTable() {
-            int[,] matrix = new int[Items.Length + 1, Volume + 1];
-            for (int itemIndex = 0; itemIndex <= Items.Length; itemIndex++) {
+        private static int[,] BuildTable(Item[] items, int volume) {
+            int[,] matrix = new int[items.Length + 1, volume + 1];
+            for (int itemIndex = 0; itemIndex <= items.Length; itemIndex++) {
                 // This adjusts the itemIndex to be 1 based instead of 0 based
                 // and in this case 0 is the initial state before an item is
                 // considered for the knapsack.
-                var currentItem = itemIndex == 0 ? null : Items[itemIndex - 1];
-                for (int currentCapacity = 0; currentCapacity <= Volume; currentCapacity++) {
+                var currentItem = itemIndex == 0 ? null : items[itemIndex - 1];
+                for (int currentCapacity = 0; currentCapacity <= volume; currentCapacity++) {
                     // Set the first row and column of the matrix to all zeros
                     // This is the state before any items are added and when the
                     // potential capacity is zero the value would also be zero.
