@@ -1,5 +1,6 @@
 ﻿using MathNet.Numerics.LinearAlgebra;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 
 [assembly: InternalsVisibleTo("TestProject1")]
 namespace QualificationWork {
@@ -56,8 +57,27 @@ namespace QualificationWork {
         }
         #endregion
 
-        public void Solve() {
-            VerifySolution();
+        public void Solve(Matrix<float> weights) {
+            var totalTime = Days * HoursPerDay;
+            var items = ItemizeByProfessor(weights, 0);
+            items.ForEach(x => Console.WriteLine(x));
+            var solution = KnapSackProblem.Solve(items.ToArray(), totalTime);
+
+            foreach(var (x,i) in solution.Select((x, i) => ( x, i ))) {
+                Solution[i, GetSolutionColumnIndex(x.Group, x.Prof)] = 1f;
+            }
+
+            foreach (var item in solution) {
+                Console.WriteLine($"m{item.Group + 1} p{item.Prof + 1}");
+            }
+            Console.WriteLine(Solution);
+            PartialSolutionVerification();
+            //int groupC = task.Groups.Count;
+            //var res = Matrix<float>.Build.DenseOfIndexed(hours * days, groupC * task.Professors.Count,
+            //    );
+            //Console.WriteLine(res);
+
+            //VerifySolution();
         }
         #region coditions
         public void PartialSolutionVerification() {
@@ -66,7 +86,7 @@ namespace QualificationWork {
         }
         public void VerifySolution() {
             PartialSolutionVerification();
-            VerifyOutputConditionLectureHours
+            VerifyOutputConditionLectureHours();
         }
 
         /// <summary>
@@ -147,9 +167,12 @@ namespace QualificationWork {
 
         public List<Item> ItemizeByProfessor(Matrix<float> weights, int j) {
             List<Item> list = new List<Item>((int)Matrix.RowSums().Sum());
-            foreach (var (prof, hourCountRaw) in Matrix.EnumerateColumnsIndexed()) {
+            foreach (var (prof, hourCountRaw) in Matrix.EnumerateColumnsIndexed(j,1)) {
                 foreach (var (group,hours) in hourCountRaw.EnumerateIndexed()) {
-                    list.Add(new Item { Value = (int)weights[group, j], Weight = 1, Prof = j, Group = group });
+                    for (int i = 1; i <= (int)hours; i++) {
+                        list.Add(new Item { Value = (int)weights[group, prof], Weight = 1, Prof = prof, Group = group });
+
+                    }
                 }
             }
             return list;

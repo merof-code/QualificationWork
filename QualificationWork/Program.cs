@@ -105,29 +105,33 @@ namespace QualificationWork {
             
             // Create the weights.
             var prioraty = Matrix<float>.Build.DenseOfArray(new float[,] {
-                { 2, 4 },  // Professor A's hours for Group 1 and Group 2
-                { 1, 3 }   // Professor B's hours for Group 1 and Group 2
+                { 1, 4 },  // Professor A's hours for Group 1 and Group 2
+                { 2, 3 }   // Professor B's hours for Group 1 and Group 2
+                //{ 1, 1 },  // Professor A's hours for Group 1 and Group 2
+                //{ 1, 1 }   // Professor B's hours for Group 1 and Group 2
             });
 
             Matrix<float> result = prioraty.Clone();
-            prioraty.Map(x => 1 / x, result);
+            var m = prioraty.Enumerate().Max();
+            prioraty.Map(x => (1 / x) * m, result);
             Console.WriteLine("Wights:");
             Console.WriteLine(result);
 
+            task.Solve(result);
 
             //this will solve one prof by one
-            for (int i = 0; i < professors.Count; i++) {
-                var items = task.ItemizeByProfessor(prioraty,i);
-                var solution = KnapSackProblem.Solve(items.ToArray(), hours * days);
+            //for (int i = 0; i < professors.Count; i++) {
+            //    var items = task.ItemizeByProfessor(prioraty,i);
+            //    var solution = KnapSackProblem.Solve(items.ToArray(), hours * days);
 
-                int groupC = task.Groups.Count;
-                var res = Matrix<float>.Build.DenseOfIndexed(hours * days, groupC * task.Professors.Count,
-                    solution.Select((x, i) => Tuple.Create(i, groupC * x.Group + x.Prof, 1f)));
-                Console.WriteLine(res);
-                foreach (var item in solution) {
-                    Console.WriteLine($"m{item.Group + 1} p{item.Prof + 1}");
-                }
-            }
+            //    int groupC = task.Groups.Count;
+            //    var res = Matrix<float>.Build.DenseOfIndexed(hours * days, groupC * task.Professors.Count,
+            //        solution.Select((x, i) => Tuple.Create(i, groupC * x.Group + x.Prof, 1f)));
+            //    Console.WriteLine(res);
+            //    foreach (var item in solution) {
+            //        Console.WriteLine($"m{item.Group + 1} p{item.Prof + 1}");
+            //    }
+            //}
 
 
             ////this solves it all in one go, but this is only as if it was only one prof
