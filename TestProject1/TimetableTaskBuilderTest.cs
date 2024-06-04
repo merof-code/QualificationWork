@@ -25,6 +25,18 @@ namespace TestProject1 {
         }
 
         [Fact]
+        public void BuildTaskSolutionMatrix_CorrectDimensions_Success() {
+            var task = GetValidBuilder().Build();
+            int expectedRows = task.Days * task.HoursPerDay;
+            int expectedCols = task.Professors.Count * task.Groups.Count;
+
+            // Validate the solution matrix
+            Assert.NotNull(task.Solution);
+            Assert.Equal(expectedRows, task.Solution.RowCount);
+            Assert.Equal(expectedCols, task.Solution.ColumnCount);
+        }
+
+        [Fact]
         public void BuildTaskMatrix_defaultProperConversion_Success() {
             var task = GetValidBuilder().Build();
             var expectedArray = new float[,] {

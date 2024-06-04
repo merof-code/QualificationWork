@@ -47,6 +47,8 @@ namespace QualificationWork {
 
             public TimetableTask Build() {
                 Verify();
+                // create the solution matrix
+                Task.Solution = Matrix<float>.Build.Dense(Task.HoursPerDay * Task.Days, Task.Professors.Count * Task.Groups.Count);
                 return Task;
             }
             private void Verify() {
