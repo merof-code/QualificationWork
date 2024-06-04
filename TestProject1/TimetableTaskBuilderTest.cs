@@ -173,7 +173,7 @@ namespace TestProject1 {
                     { 10, 10 }
                 }
             );
-            Assert.Throws<Exception>(() => GetValidBuilder().PlannedHours(plan).Build());
+            Assert.Throws<InvalidDataException>(() => GetValidBuilder().PlannedHours(plan).Build());
         }
 
         [Fact]
@@ -199,7 +199,7 @@ namespace TestProject1 {
                     { 15, 0 }
                 }
             );
-            Assert.Throws<Exception>(() => GetValidBuilder().PlannedHours(plan).Build());
+            Assert.Throws<InvalidDataException>(() => GetValidBuilder().PlannedHours(plan).Build());
         }
 
         [Fact]

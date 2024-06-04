@@ -4,17 +4,6 @@ using System.Text.RegularExpressions;
 using static QualificationWork.Program;
 
 namespace QualificationWork {
-    public class Item {
-        public int Weight { get; set; }
-        public int Value { get; set; } = -1;
-        public string Name { get; set; } = "unset";
-        public int Group { get; internal set; }
-        public int Prof { get; internal set; }
-
-        public override string ToString() {
-            return $"({Weight}|{Value})";
-        }
-    }
     public record Group(string Name);
     public record Professor(string Name) {
         // TODO: make availability
@@ -22,8 +11,6 @@ namespace QualificationWork {
     }
 
     public record ProfGroup(Professor Professor, Group Group, int Hours);
-
-
 
     //create KnapSack problem for day one for prof 
 
