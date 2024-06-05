@@ -59,15 +59,13 @@ namespace QualificationWork {
 
         public void Solve(Matrix<float> weights) {
             var totalTime = Days * HoursPerDay;
+            //items.ForEach(x => Console.WriteLine(x));
             var items = ItemizeByProfessor(weights, 0);
-            items.ForEach(x => Console.WriteLine(x));
             var solution = KnapSackProblem.Solve(items.ToArray(), totalTime);
 
-            foreach(var (x,i) in solution.Select((x, i) => ( x, i ))) {
-                Solution[i, GetSolutionColumnIndex(x.Group, x.Prof)] = 1f;
-            }
-
-            foreach (var item in solution) {
+            int i = 0;
+            foreach(var item in solution.OrderByDescending(x =>x.Value)) {
+                Solution[i++, GetSolutionColumnIndex(item.Group, item.Prof)] = 1f;
                 Console.WriteLine($"m{item.Group + 1} p{item.Prof + 1}");
             }
             Console.WriteLine(Solution);

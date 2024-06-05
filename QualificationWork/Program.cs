@@ -105,19 +105,29 @@ namespace QualificationWork {
             
             // Create the weights.
             var prioraty = Matrix<float>.Build.DenseOfArray(new float[,] {
-                { 1, 4 },  // Professor A's hours for Group 1 and Group 2
-                { 2, 3 }   // Professor B's hours for Group 1 and Group 2
+                { 4, 1 },  // Professor A's hours for Group 1 and Group 2
+                { 3, 2 }   // Professor B's hours for Group 1 and Group 2
                 //{ 1, 1 },  // Professor A's hours for Group 1 and Group 2
                 //{ 1, 1 }   // Professor B's hours for Group 1 and Group 2
             });
 
-            Matrix<float> result = prioraty.Clone();
-            var m = prioraty.Enumerate().Max();
-            prioraty.Map(x => (1 / x) * m, result);
-            Console.WriteLine("Wights:");
-            Console.WriteLine(result);
+            // SEE: playing with setting the priority as vectors of prof priority and group priority
+            //var vecotorPrioratyProfs = Vector<float>.Build.DenseOfArray(new float[] { 2, 1 });
+            //var vecotorPrioratySubjects = Vector<float>.Build.DenseOfArray(new float[] { 1, 2 });
+            //var m_pr_Profs = Matrix<float>.Build.DenseOfColumnVectors(vecotorPrioratyProfs);
+            //var m_pr_Groups = Matrix<float>.Build.DenseOfRowVectors(vecotorPrioratySubjects);
+            //Console.WriteLine(m_pr_Profs * m_pr_Groups);
+            //Console.WriteLine("While it is:");
+            //Console.WriteLine(prioraty);
 
-            task.Solve(result);
+
+            //Matrix<float> result = prioraty.Clone();
+            var m = prioraty.Enumerate().Max();
+            //prioraty.Map(x => (1 / x) * m, result);
+            Console.WriteLine("Wights:");
+            Console.WriteLine(prioraty);
+
+            task.Solve(prioraty);
 
             //this will solve one prof by one
             //for (int i = 0; i < professors.Count; i++) {
