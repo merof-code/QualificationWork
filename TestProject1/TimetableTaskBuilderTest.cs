@@ -31,9 +31,9 @@ namespace TestProject1 {
             int expectedCols = task.Professors.Count * task.Groups.Count;
 
             // Validate the solution matrix
-            Assert.NotNull(task.Solution);
-            Assert.Equal(expectedRows, task.Solution.RowCount);
-            Assert.Equal(expectedCols, task.Solution.ColumnCount);
+            Assert.NotNull(task.SolutionMatrix);
+            Assert.Equal(expectedRows, task.SolutionMatrix.RowCount);
+            Assert.Equal(expectedCols, task.SolutionMatrix.ColumnCount);
         }
 
         [Fact]
@@ -46,8 +46,8 @@ namespace TestProject1 {
             var expectedMatrix = Matrix<float>.Build.DenseOfArray(expectedArray);
 
             // Validate the matrix
-            Assert.NotNull(task.Matrix);
-            Assert.True(task.Matrix.Equals(expectedMatrix));
+            Assert.NotNull(task.PlanMatrix);
+            Assert.True(task.PlanMatrix.Equals(expectedMatrix));
         }
 
         [Fact]
@@ -172,8 +172,8 @@ namespace TestProject1 {
             var expectedMatrix = Matrix<float>.Build.DenseOfArray(expectedArray);
 
             // Validate the matrix
-            Assert.NotNull(task.Matrix);
-            Assert.True(task.Matrix.Equals(expectedMatrix));
+            Assert.NotNull(task.PlanMatrix);
+            Assert.True(task.PlanMatrix.Equals(expectedMatrix));
         }
         // New tests for VerifyInputCondition1
         [Fact]

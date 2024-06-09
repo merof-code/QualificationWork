@@ -4,12 +4,15 @@ using System.Text.RegularExpressions;
 using static QualificationWork.Program;
 
 namespace QualificationWork {
-    public record Group(string Name);
-    public record Professor(string Name) {
-        // TODO: make availability
+    public record Group(string Name) {
         public Vector<float> Availability { get; set; }
+        public Vector<float> OriginalAvailability { get; set; }
     }
 
+    public record Professor(string Name) {
+        public Vector<float> Availability { get; set; }
+        public Vector<float> OriginalAvailability { get; set; }
+    }
     public record ProfGroup(Professor Professor, Group Group, int Hours);
 
     //create KnapSack problem for day one for prof 
@@ -32,7 +35,8 @@ namespace QualificationWork {
             //for (int i = 0; i < itemsCount; i++) {
             //    items.Add(new() { Weight = random.Next(1 + 10), Value = random.Next(10 + 300) });
             //}
-            Example1p4();
+            //Example1p4();
+            realData();
 
 
             //// Create a list of 5 Groups
@@ -71,7 +75,86 @@ namespace QualificationWork {
 
             // create items
             // lets first do it by hand
-            
+
+        }
+        
+        private static void realData() {
+            // Define hours and days
+            int hours = 4, days = 5;
+
+            // Read the CSV file
+            string[] lines = File.ReadAllLines("data.csv");
+
+            // Initialize lists for groups and professors
+            var groups = new List<Group>();
+            var professors = new List<Professor>();
+
+            // Dictionary to store the hours matrix data
+            var matrixData = new Dictionary<(string professor, string group), int>();
+
+            // Process the CSV file, skipping the header line
+            foreach (var line in lines.Skip(1)) {
+                var parts = line.Split(';');
+                string professor = parts[0].Trim();
+                string group = parts[1].Trim();
+
+                // Add the professor if not already in the list
+                if (!professors.Any(p => p.Name == professor)) {
+                    professors.Add(new Professor(professor));
+                }
+
+                // Add the group if not already in the list
+                if (!groups.Any(g => g.Name == group)) {
+                    groups.Add(new Group(group));
+                }
+
+                // Increment the count for the professor-group pair
+                var key = (professor, group);
+                if (!matrixData.ContainsKey(key)) {
+                    matrixData[key] = 0;
+                }
+                matrixData[key]++;
+            }
+
+            // Create the matrix with columns as professors and rows as groups
+            float[,] array = new float[groups.Count, professors.Count];
+            foreach (var kvp in matrixData) {
+                var professorIndex = professors.FindIndex(p => p.Name == kvp.Key.professor);
+                var groupIndex = groups.FindIndex(g => g.Name == kvp.Key.group);
+                array[groupIndex, professorIndex] = kvp.Value;
+            }
+
+            // Convert the 2D array to a MathNet matrix
+            var matrix = Matrix<float>.Build.DenseOfArray(array);
+
+            // Build the TimetableTask
+            var task = new TimetableTask.Builder()
+                .Groups(groups)
+                .Professors(professors)
+                .HoursPerDay(hours)
+                .Days(days)
+                .PlannedHours(matrix)
+                .Build();
+
+            Console.WriteLine("Timetable limitations created successfully.");
+            Console.WriteLine(task.PlanMatrix);
+
+            // Create the weights.
+            //var priority = Matrix<float>.Build.DenseOfArray(new float[,] {
+            //    { 4, 1 }, // Professor A's hours for Group 1 and Group 2
+            //    { 3, 2 }  // Professor B's hours for Group 1 and Group 2
+            //});
+
+            var priority = Matrix<float>.Build.Dense(groups.Count, professors.Count, 1);
+
+            // Calculate the maximum weight
+            var maxWeight = priority.Enumerate().Max();
+
+            // Output weights and solve the task
+            Console.WriteLine("Weights:");
+            Console.WriteLine(priority);
+
+            task.Solve(priority);
         }
 
         private static void Example1p4() {
@@ -101,12 +184,12 @@ namespace QualificationWork {
                 .Build();
 
             Console.WriteLine("Timetable limitations created successfully.");
-            Console.WriteLine(task.Matrix);
+            Console.WriteLine(task.PlanMatrix);
             
             // Create the weights.
             var prioraty = Matrix<float>.Build.DenseOfArray(new float[,] {
-                { 4, 1 },  // Professor A's hours for Group 1 and Group 2
-                { 3, 2 }   // Professor B's hours for Group 1 and Group 2
+                { 4, 1 }, // Professor A's hours for Group 1 and Group 2
+                { 3, 2 }  // Professor B's hours for Group 1 and Group 2
                 //{ 1, 1 },  // Professor A's hours for Group 1 and Group 2
                 //{ 1, 1 }   // Professor B's hours for Group 1 and Group 2
             });

@@ -35,20 +35,21 @@ namespace QualificationWork {
             public Builder PlannedHours(List<ProfGroup> plannedHours) {
                 // TODO: add warning if there is an empty column or row
                 _plannedHours = plannedHours.Distinct().ToList();
-                Task.Matrix = null;
+                Task.PlanMatrix = null;
                 return this;
             }
 
             public Builder PlannedHours(Matrix<float> plannedHours) {
                 // TODO: add warning if there is an empty column or row
-                Task.Matrix = plannedHours;
+                Task.PlanMatrix = plannedHours;
                 return this;
             }
 
             public TimetableTask Build() {
                 Verify();
                 // create the solution matrix
-                Task.Solution = Matrix<float>.Build.Dense(Task.HoursPerDay * Task.Days, Task.Professors.Count * Task.Groups.Count);
+                Task.SolutionMatrix = Matrix<float>.Build.Dense(Task.HoursPerDay * Task.Days, Task.Professors.Count * Task.Groups.Count);
+                Task.PlanMatrixOriginal = Task.PlanMatrix.Clone();
                 return Task;
             }
             private void Verify() {
@@ -74,30 +75,31 @@ namespace QualificationWork {
                 VerifyInputCondition1();
                 VerifyInputCondition2();
                 VerifyAllProffessorsAvailabilitiesAreWithinLimits();
+                VerifyAllGroupsAvailabilitiesAreWithinLimits();
                 VerifyInputCondition3();
                 VerifyInputCondition4();
             }
 
             private void VerifyMatrix() {
                 // Ensure the matrix is not null
-                if (Task.Matrix == null) {
+                if (Task.PlanMatrix == null) {
                     throw new InvalidDataException("Matrix is not initialized.");
                 }
 
                 // Check that the number of rows equals the number of groups
-                if (Task.Matrix.RowCount != Task.Groups.Count) {
+                if (Task.PlanMatrix.RowCount != Task.Groups.Count) {
                     throw new InvalidDataException("The number of rows in the matrix does not match the number of groups.");
                 }
 
                 // Check that the number of columns equals the number of professors
-                if (Task.Matrix.ColumnCount != Task.Professors.Count) {
+                if (Task.PlanMatrix.ColumnCount != Task.Professors.Count) {
                     throw new InvalidDataException("The number of columns in the matrix does not match the number of professors.");
                 }
 
                 // Check that there are no negative values and all values are whole numbers
-                for (int i = 0; i < Task.Matrix.RowCount; i++) {
-                    for (int j = 0; j < Task.Matrix.ColumnCount; j++) {
-                        float value = Task.Matrix[i, j];
+                for (int i = 0; i < Task.PlanMatrix.RowCount; i++) {
+                    for (int j = 0; j < Task.PlanMatrix.ColumnCount; j++) {
+                        float value = Task.PlanMatrix[i, j];
                         if (value < 0) {
                             throw new InvalidDataException($"Matrix contains a negative value at position ({i}, {j}).");
                         }
@@ -115,7 +117,7 @@ namespace QualificationWork {
             /// if not, convert planned hours to matrix
             /// </summary>
             private void BuildTaskMatrix() {
-                if (Task.Matrix != null && Task.Matrix.RowCount > 0) { return; }
+                if (Task.PlanMatrix != null && Task.PlanMatrix.RowCount > 0) { return; }
                 if (!_plannedHours.Any()) {
                     throw new InvalidDataException("There must be at least one planned hour");
                 }
@@ -134,7 +136,7 @@ namespace QualificationWork {
                     int groupIndex = Task.Groups.IndexOf(plannedHour.Group);
                     matrix[groupIndex, profIndex] = plannedHour.Hours;
                 }
-                Task.Matrix = matrix;
+                Task.PlanMatrix = matrix;
             }
 
             private void VerifyInputCondition1() {
@@ -142,10 +144,31 @@ namespace QualificationWork {
                 for (int i = 0; i < Task.Groups.Count; i++) {
                     float totalHours = 0;
                     for (int j = 0; j < Task.Professors.Count; j++) {
-                        totalHours += Task.Matrix[i, j];
+                        totalHours += Task.PlanMatrix[i, j];
                     }
                     if (totalHours > qh) {
                         throw new InvalidDataException($"Group {Task.Groups[i].Name} exceeds the maximum allowed hours.");
+                    }
+                }
+            }
+            private void VerifyAllGroupsAvailabilitiesAreWithinLimits() {
+                var fullTime = Task.Days * Task.HoursPerDay;
+                var groupsPlannedHours = Task.PlanMatrix.RowSums();
+                foreach (var (group,i) in Task.Groups.Select((x,i) => (x,i))) {
+                    if(group.Availability is null) { group.Availability = Vector<float>.Build.Dense(fullTime, 1); }
+                    if (group.Availability.Where(x => x != 0 && x != 1).Any()) {
+                        throw new InvalidDataException($"Group {group.Name} contains a non binary value ({group.Availability})");
+                    }
+                    if (group.Availability.Sum() > fullTime) {
+                        // i know this is useless, just in case
+                        throw new InvalidDataException($"Group {group.Name} has more hours then available {fullTime}");
+                    }
+                    if (group.Availability.Count() != fullTime) {
+                        throw new InvalidDataException($"Group {group.Name} availability vector is different size");
+                    }
+
+                    if (group.Availability.Sum() < groupsPlannedHours[i]) {
+                        throw new InvalidDataException($"Group {group.Name} has less hours available then planned {group.Availability.Sum()} < {groupsPlannedHours[i]}");
                     }
                 }
             }
@@ -155,10 +178,10 @@ namespace QualificationWork {
                 for (int j = 0; j < Task.Professors.Count; j++) {
                     float totalHours = 0;
                     for (int i = 0; i < Task.Groups.Count; i++) {
-                        totalHours += Task.Matrix[i, j];
+                        totalHours += Task.PlanMatrix[i, j];
                     }
                     if (totalHours > qh) {
-                        throw new InvalidDataException($"Professor {Task.Professors[j].Name} exceeds the maximum allowed hours.");
+                        throw new InvalidDataException($"Professor {Task.Professors[j].Name} exceeds the maximum possible hours.");
                     }
                 }
             }
@@ -168,7 +191,7 @@ namespace QualificationWork {
                     float availableHours = Task.Professors[j].Availability.Sum();
                     float assignedHours = 0;
                     for (int i = 0; i < Task.Groups.Count; i++) {
-                        assignedHours += Task.Matrix[i, j];
+                        assignedHours += Task.PlanMatrix[i, j];
                     }
                     if (assignedHours > availableHours) {
                         throw new InvalidDataException($"Professor {Task.Professors[j].Name} does not have enough available hours.");
@@ -178,7 +201,9 @@ namespace QualificationWork {
 
             private void VerifyAllProffessorsAvailabilitiesAreWithinLimits() {
                 var fullTime = Task.Days * Task.HoursPerDay;
-                foreach (var prof in Task.Professors) {
+                var profsPlannedHours = Task.PlanMatrix.ColumnSums();
+                foreach (var (prof,i) in Task.Professors.Select((x,i)=> (x, i))) {
+                    if (prof.Availability is null) { prof.Availability = Vector<float>.Build.Dense(fullTime, 1); }
                     if (prof.Availability.Where(x => x != 0 && x != 1).Any()) {
                         throw new InvalidDataException($"Prof {prof.Name} contains a non binary value ({prof.Availability})");
                     }
@@ -189,6 +214,9 @@ namespace QualificationWork {
                     if(prof.Availability.Count() != fullTime) {
                         throw new InvalidDataException($"Prof {prof.Name} availability vector is different size");
                     }
+                    if (prof.Availability.Sum() < profsPlannedHours[i]) {
+                        throw new InvalidDataException($"Prof {prof.Name} has less hours available then planned {prof.Availability.Sum()} < {profsPlannedHours[i]}");
+                    }
                 }
             }
             private void VerifyInputCondition4() {
@@ -197,8 +225,8 @@ namespace QualificationWork {
                     var participatingProfs = new List<Professor>();
                     float requiredHours = 0; // all hours for group
                     for (int j = 0; j < Task.Professors.Count; j++) { // for all profs 
-                        requiredHours += Task.Matrix[i, j];
-                        if (Task.Matrix[i, j] != 0) { participatingProfs.Add(Task.Professors[j]); };
+                        requiredHours += Task.PlanMatrix[i, j];
+                        if (Task.PlanMatrix[i, j] != 0) { participatingProfs.Add(Task.Professors[j]); };
                     }
                     // this peace of code should generate an end avilability vector for group
                     // by starting at a full vector of 1s and then by *, if there will ever
