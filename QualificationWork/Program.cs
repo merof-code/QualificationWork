@@ -95,7 +95,7 @@ namespace QualificationWork {
             // Process the CSV file, skipping the header line
             foreach (var line in lines.Skip(1)) {
                 var parts = line.Split(';');
-                string professor = parts[0].Trim();
+                string professor = parts[0].Replace("977", "").Replace("@.com.ua", "").Trim();
                 string group = parts[1].Trim();
 
                 // Add the professor if not already in the list
