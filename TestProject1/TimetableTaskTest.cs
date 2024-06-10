@@ -95,7 +95,7 @@ namespace TestProject1 {
 
             // Act & Assert
             var exception = Assert.Throws<Exception>(() => timetableTask.VerifyOutputConditionProfessorSingleLecture());
-            Assert.Equal("Professor 1 Prof2 is scheduled for more lectures than available at time 0.", exception.Message);
+            Assert.Equal("Professor 1 Prof2 is scheduled for more than one lecture at a time", exception.Message);
         }
 
         [Fact]
@@ -165,7 +165,7 @@ namespace TestProject1 {
             timetableTask.SolutionMatrix = correctSolution.Transpose();
 
             // Act & Assert
-            timetableTask.VerifyOutputConditionLectureHours();
+            timetableTask.VerifyOutputConditionAllLectureHours();
         }
 
         [Fact]
@@ -184,7 +184,7 @@ namespace TestProject1 {
             timetableTask.SolutionMatrix = incorrectSolution;
 
             // Act & Assert
-            var exception = Assert.Throws<Exception>(() => timetableTask.VerifyOutputConditionLectureHours());
+            var exception = Assert.Throws<Exception>(() => timetableTask.VerifyOutputConditionAllLectureHours());
             Assert.Equal("Group i=0 Group1 and Professor j=1 Prof2 do not match the planned lecture hours. Expected 1, but got 0.", exception.Message);
         }
         [Fact]
@@ -203,7 +203,7 @@ namespace TestProject1 {
             timetableTask.SolutionMatrix = incorrectSolution;
 
             // Act & Assert
-            var exception = Assert.Throws<Exception>(() => timetableTask.VerifyOutputConditionLectureHours());
+            var exception = Assert.Throws<Exception>(() => timetableTask.VerifyOutputConditionAllLectureHours());
             Assert.Equal("Group i=0 Group1 and Professor j=1 Prof2 do not match the planned lecture hours. Expected 1, but got 2.", exception.Message);
         }
 
