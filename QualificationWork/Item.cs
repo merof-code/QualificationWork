@@ -6,7 +6,7 @@
         public int Prof { get; internal set; }
 
         public override string ToString() {
-            return $"(Group{Group+1} Prof{Group+1}|{Value})";
+            return $"(Group{Group} Prof{Prof}|{Value})";
         }
     }
 }
