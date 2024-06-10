@@ -5,8 +5,9 @@ using System.Text.RegularExpressions;
 [assembly: InternalsVisibleTo("TestProject1")]
 namespace QualificationWork {
     public partial class TimetableTask {
+        private ExcelExport excelExport;
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-        private TimetableTask() { }
+        private TimetableTask() { excelExport = new ExcelExport(this); }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         //todo: do a converter to this List<ProfGroup> PlannedHours { get; set; }
         public int Days { get; private set; } = 5;
@@ -55,28 +56,30 @@ namespace QualificationWork {
             }
         }
 
-        private int GetSolutionColumnIndex(int groupId, int professorId) {
-            return groupId * (Groups.Count) + professorId;
+        internal int GetSolutionColumnIndex(int groupId, int professorId) {
+            return groupId * (Professors.Count) + professorId;
         }
         #endregion
-
         public void Solve(Matrix<float> weights) {
             SetOriginalAvailabilities();
+            
             var totalTime = Days * HoursPerDay;
+            //excelExport.SaveToFile($"Timetable_zero_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
             foreach (var prof in Professors) {
                 SolveByProffessor(weights, prof);
                 Console.WriteLine(SolutionMatrix);
+                
                 IterationWrap();
             }
             //int groupC = task.Groups.Count;
             //var res = Matrix<float>.Build.DenseOfIndexed(hours * days, groupC * task.Professors.Count,
             //    );
             //Console.WriteLine(res);
-
-            //VerifySolution();
+            excelExport.SaveToFile($"Timetable_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
+            VerifySolution();
         }
 
-        private void SetOriginalAvailabilities() {
+        internal void SetOriginalAvailabilities() {
             foreach (var prof in Professors) {
                 prof.OriginalAvailability = prof.Availability.Clone();
             }
@@ -96,12 +99,14 @@ namespace QualificationWork {
             var items = ItemizeByProfessor(weights, Professors.IndexOf(professor));
             var solution = KnapSackProblem.Solve(items.ToArray(), TotalAvailableTime);
 
+            // has a list of hours when the prof is available in this iteration
             var profAvailability = professor.Availability.Select((available, hour) => (available, hour)).Where(x => x.available > 0).Select(x=>x.hour).ToList();
+
+            // as to not query this again
             var usedGroups = solution.Select(item => item.Group).Distinct();
-            //var f = usedGroups.Select((group_id,) => (group_id,)).Where()
-
-            //Groups[0].Availability.Select((available, hour) => (available, hour)).Where(x => x.available > 0);
-
+            
+            // has a dictionary, for each group, has a list of hours when they are available in 
+            // this iteration
             Dictionary<int, List<int>> groupAvailability = usedGroups.ToDictionary(
                group_id => group_id,
                group_id => Groups[group_id].Availability
@@ -123,6 +128,7 @@ namespace QualificationWork {
                 groupAvailability[item.Group].Remove(hour);
                 profAvailability.Remove(hour);
                 SolutionMatrix[hour, GetSolutionColumnIndex(item.Group, item.Prof)] = 1f;
+                //excelExport.SaveToFile($"Timetable_{Professors[item.Prof].Name}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
             }
         }
         public void SolveByGroup() { 
@@ -138,10 +144,11 @@ namespace QualificationWork {
         public void PartialSolutionVerification() {
             VerifyOutputConditionGroupSingleLecture();
             VerifyOutputConditionProfessorSingleLecture();
+            VerifyOutputConditionPartialLectureHours();
         }
         public void VerifySolution() {
             PartialSolutionVerification();
-            VerifyOutputConditionLectureHours();
+            VerifyOutputConditionAllLectureHours();
         }
 
         /// <summary>
@@ -186,7 +193,7 @@ namespace QualificationWork {
                         sum += SolutionMatrix[t, GetSolutionColumnIndex(i, j)];
                     }
                     if (sum > 1) {
-                        throw new Exception($"Professor {j} {prof.Name} is scheduled for more lectures than one lecture at a time");
+                        throw new Exception($"Professor {j} {prof.Name} is scheduled for more than one lecture at a time");
                     }
                     if (sum > prof.OriginalAvailability[t])
                         throw new Exception($"Professor {j} {prof.Name} is scheduled for more lectures than available at time {t}.");
@@ -198,7 +205,7 @@ namespace QualificationWork {
         /// Verify Constraint 3: The planned lecture hours for each group and professor match the scheduled hours.
         /// </summary>
         /// <exception cref="Exception"></exception>
-        public void VerifyOutputConditionLectureHours() {
+        public void VerifyOutputConditionAllLectureHours() {
             int M = Groups.Count;
             int P = Professors.Count;
             int q = Days;
@@ -215,9 +222,33 @@ namespace QualificationWork {
                     }
                 }
             }
-        } 
-        #endregion
+        }
+
+        /// <summary>
+        /// Verify Constraint 3: The planned lecture hours for each group and professor match the scheduled hours.
+        /// </summary>
+        /// <exception cref="Exception"></exception>
+        public void VerifyOutputConditionPartialLectureHours() {
+            int M = Groups.Count;
+            int P = Professors.Count;
+            int q = Days;
+            int h = HoursPerDay;
+
+            for (int i = 0; i < M; i++) {
+                for (int j = 0; j < P; j++) {
+                    float sum = 0;
+                    for (int t = 0; t < q * h; t++) {
+                        sum += SolutionMatrix[t, GetSolutionColumnIndex(i, j)];
+                    }
+                    if (sum > PlanMatrix[i, j]) {
+                        throw new Exception($"Group {Groups[i].Name}({i}) and Professor {Professors[j].Name}({j}) Have more hours then planned. Expected {PlanMatrix[i, j]}, but got {sum}.");
+                    }
+                }
+            }
+        }
         
+        #endregion
+
         // merge Groups and Profs to use less code
         internal void UpdateGroupsAvailability() {
             for (int i = 0; i < Groups.Count; i++) {
@@ -259,10 +290,10 @@ namespace QualificationWork {
 
         public List<Item> ItemizeByProfessor(Matrix<float> weights, int j) {
             List<Item> list = new List<Item>((int)PlanMatrix.RowSums().Sum());
-            foreach (var (prof, hourCountRaw) in PlanMatrix.EnumerateColumnsIndexed(j,1)) {
+            foreach (var (row, hourCountRaw) in PlanMatrix.EnumerateColumnsIndexed(j,1)) {
                 foreach (var (group,hours) in hourCountRaw.EnumerateIndexed()) {
                     for (int i = 1; i <= (int)hours; i++) {
-                        list.Add(new Item { Value = (int)weights[group, prof], Weight = 1, Prof = prof, Group = group });
+                        list.Add(new Item { Value = (int)weights[group, j], Weight = 1, Prof = j, Group = group });
 
                     }
                 }
