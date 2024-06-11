@@ -9,7 +9,6 @@ namespace QualificationWork {
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         private TimetableTask() { excelExport = new ExcelExport(this); }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-        //todo: do a converter to this List<ProfGroup> PlannedHours { get; set; }
         public int Days { get; private set; } = 5;
         public int HoursPerDay { get; private set; } = 6;
         public List<Professor> Professors { get; private set; }
@@ -17,7 +16,6 @@ namespace QualificationWork {
         // TODO: this one will have to most likely change
         // could possible inherit from this. or just move it into its own object.
         public Matrix<float> PlanMatrix { get; private set; }
-        public Matrix<float> PlanMatrixOriginal { get; private set; }
         /// <summary>
         /// columns = profs * group
         /// rows = days * hours 
@@ -71,10 +69,6 @@ namespace QualificationWork {
                 
                 IterationWrap();
             }
-            //int groupC = task.Groups.Count;
-            //var res = Matrix<float>.Build.DenseOfIndexed(hours * days, groupC * task.Professors.Count,
-            //    );
-            //Console.WriteLine(res);
             excelExport.SaveToFile($"Timetable_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
             VerifySolution();
         }
@@ -128,18 +122,15 @@ namespace QualificationWork {
                 groupAvailability[item.Group].Remove(hour);
                 profAvailability.Remove(hour);
                 SolutionMatrix[hour, GetSolutionColumnIndex(item.Group, item.Prof)] = 1f;
-                //excelExport.SaveToFile($"Timetable_{Professors[item.Prof].Name}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
+              
             }
         }
-        public void SolveByGroup() { 
-            
-        }
-        public void SolveByProffessorGroup() { }
-        
-        public void SolveByProffessorDay() { }
-        public void SolveByGroupDay() { }
-        public void SolveByProffessorGroupDay() { }
-
+		/*public void SolveByGroup() { }
+			public void SolveByProffessorGroup() { }
+			public void SolveByProffessorDay() { }
+			public void SolveByGroupDay() { }
+			public void SolveByProffessorGroupDay() { }
+		*/
         #region coditions
         public void PartialSolutionVerification() {
             VerifyOutputConditionGroupSingleLecture();
@@ -300,16 +291,5 @@ namespace QualificationWork {
             }
             return list;
         }
-        public List<Item> Itemize(Matrix<float> weights) {
-            List<Item> list = new List<Item> ((int)PlanMatrix.RowSums().Sum());
-            foreach (var (group,prof,hourCountRaw) in PlanMatrix.EnumerateIndexed()) {
-                int hourCount = (int)hourCountRaw;
-                for (int i = 0; i < hourCount; i++) {
-                    list.Add(new Item { Value = (int)weights[group, prof], Weight=1, Prof = prof, Group = group });
-                }
-            }
-            return list;
-        }
-
     }
 }

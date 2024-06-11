@@ -80,7 +80,7 @@ namespace QualificationWork {
         
         private static void realData() {
             // Define hours and days
-            int hours = 4, days = 5;
+            int hours = 3, days = 5;
 
             // Read the CSV file
             string[] lines = File.ReadAllLines("data.csv");
