@@ -49,7 +49,7 @@ namespace QualificationWork {
                 Verify();
                 // create the solution matrix
                 Task.SolutionMatrix = Matrix<float>.Build.Dense(Task.HoursPerDay * Task.Days, Task.Professors.Count * Task.Groups.Count);
-                Task.PlanMatrixOriginal = Task.PlanMatrix.Clone();
+                //Task.PlanMatrixOriginal = Task.PlanMatrix.Clone();
                 Task.SetOriginalAvailabilities();
                 return Task;
             }
